@@ -32,9 +32,6 @@ def display_images(images, cols=4, rows=5, figsize=(15, 10), cmap=None):
     fig.show()
 
 
-
-
-
 # showImages(list(map(lambda img: (img[0], cv2.cvtColor(img[1], cv2.COLOR_BGR2RGB)), testImages)), 2, 3, (15, 13))
 
 # lets select a random image
@@ -66,12 +63,13 @@ for index, a in enumerate(axes):
 #     return list(map(lambda img: (img[0], action(img[1])), images))
 
 # Act as delegator and shows the images after the transform
-def delegator(images, function_pointer):
+def delegator(images, function_pointer, display_image=True, cmap='gray'):
     """A utility function it just delegates the work to another function.
     retuns the list of tuples containing image name & respective image matrix.
     """
     result = list(map(lambda img: (img[0], function_pointer(img[1])), images))
-    display_images(result, 2, 3, (15, 13), cmap='gray')
+    if display_image:
+        display_images(result, 2, 3, (15, 13), cmap='gray')
     return result
 
 
@@ -181,8 +179,9 @@ merged_images = delegator(test_images_with_names, merge_all_gradients)
 # To display a summary of all the conversions
 titles = ['Sobel-X', 'Sobel-Y', 'Magnitude', 'Direction', 'Combined']
 
-images_with_gradients = list(zip(sobel_images_X, sobel_images_Y, magnitude_gradient_images, direction_gradient_images, merged_images))
-#selected 3 images
+images_with_gradients = list(
+    zip(sobel_images_X, sobel_images_Y, magnitude_gradient_images, direction_gradient_images, merged_images))
+# selected 3 images
 image_with_names = list(map(lambda images: list(zip(titles, images)), images_with_gradients))[3:6]
 flatten_results = [item for sublist in image_with_names for item in sublist]
 

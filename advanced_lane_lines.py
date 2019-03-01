@@ -1,3 +1,7 @@
+from camera_mat_distortion import *
+from color_trans_gradients import *
+from perpective_transform import *
+
 import numpy as np
 import cv2
 import glob
@@ -55,11 +59,7 @@ def imageSideBySide(leftImg, leftTitle, rightImg, rightTitle, figsize=(20, 10), 
 
 
 index = 1
-original = testImages[index][1]
-imageSideBySide(
-    cv2.cvtColor(original, cv2.COLOR_BGR2RGB), 'Original',
-    cv2.cvtColor(cv2.undistort(original, mtx, dist, None, mtx), cv2.COLOR_BGR2RGB), 'Undistort'
-)
+original = testImages[1][1]
 
 
 def undistortAndHLS(image, mtx=mtx, dist=dist):
