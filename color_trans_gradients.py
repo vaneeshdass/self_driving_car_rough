@@ -163,14 +163,14 @@ def merge_all_gradients(img):
      This function compute the combination of Sobel X and Sobel Y or Magnitude and Direction as a whole
     """
     # below calculating all the respecetive gradients
-    sobelX = take_sobel_in_X(img)
-    sobelY = take_sobel_in_Y(img)
+    sobel_X = take_sobel_in_X(img)
+    sobel_Y = take_sobel_in_Y(img)
 
     magnitude_gradient = take_magnitude_gradient(img)
     direction_gradient = take_direction_gradient(img)
-    combined_gradient = np.zeros_like(sobelX)
+    combined_gradient = np.zeros_like(sobel_X)
     # combining all as a whole
-    combined_gradient[((sobelX == 1) & (sobelY == 1)) | ((magnitude_gradient == 1) & (direction_gradient == 1))] = 1
+    combined_gradient[((sobel_X == 1) & (sobel_Y == 1)) | ((magnitude_gradient == 1) & (direction_gradient == 1))] = 1
 
     return combined_gradient
 
