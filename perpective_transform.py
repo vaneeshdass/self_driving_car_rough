@@ -38,44 +38,48 @@ imageSideBySide(
 )
 
 index = 0
-original = cv2.cvtColor(testImages[index][1], cv2.COLOR_BGR2RGB)
-undist = cv2.undistort(original, mtx, dist, None, mtx)
+original_image = cv2.cvtColor(testImages[index][1], cv2.COLOR_BGR2RGB)
+# coreecting distortion in a image using transformation matrix and coefficients
+undistorted_image = cv2.undistort(original_image, mtx, dist, None, mtx)
 
-xSize, ySize, _ = undist.shape
-copy = undist.copy()
+xSize, ySize, _ = undistorted_image.shape
+copy = undistorted_image.copy()
 
-bottomY = 720
-topY = 455
+maximum_Y = 720
+top_Y = 455
 
-# drawing lines for both sides left and right lane to draw a rectangle for visualization
-left1 = (190, bottomY)
-left1_x, left1_y = left1
-left2 = (585, topY)
-left2_x, left2_y = left2
+# here i draw the lines on both lanes for helping in visualization . The formation is trapezoidal
+#first select points for left lane
+left1 = (190, maximum_Y)
+left_bottom_x, left_bottom_y = (190, maximum_Y)
+left2 = (585, top_Y)
+left_top_x, left_top_y = (585, top_Y)
 
-right1 = (705, topY)
-right1_x, right1_y = right1
+right1 = (705, top_Y)
+right_top_x, right_top_y = right1
 
-right2 = (1130, bottomY)
-right2_x, right2_y = right2
+right2 = (1130, maximum_Y)
+right_bottom_x, right_bottom_y = (1130, maximum_Y)
 
 color = [255, 0, 0]
-w = 2
-cv2.line(copy, left1, left2, color, w)
-cv2.line(copy, left2, right1, color, w)
-cv2.line(copy, right1, right2, color, w)
-cv2.line(copy, right2, left1, color, w)
+width = 2
+
+cv2.line(copy, (left_bottom_x, left_bottom_y), (left_top_x, left_top_y), color, width)
+cv2.line(copy, (left_top_x, left_top_y), (right_top_x, right_top_y), color, width)
+cv2.line(copy, (right_top_x, right_top_y), (right_bottom_x, right_bottom_y), color, width)
+cv2.line(copy, (right_bottom_x, right_bottom_y), (left_bottom_x, left_bottom_y), color, width)
+
 fig, ax = plt.subplots(figsize=(20, 10))
 ax.imshow(copy)
 fig.show()
 
-gray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)
+gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
 # source coordinates on original image
 src = np.float32([
-    [left2_x, left2_y],
-    [right1_x, right1_y],
-    [right2_x, right2_y],
-    [left1_x, left1_y]
+    [left_top_x, left_top_y],
+    [right_top_x, right_top_y],
+    [right_bottom_x, right_bottom_y],
+    [left_bottom_x, left_bottom_y]
 ])
 nX = gray.shape[1]
 nY = gray.shape[0]
@@ -92,10 +96,10 @@ dst = np.float32([
 img_size = (gray.shape[1], gray.shape[0])
 M = cv2.getPerspectiveTransform(src, dst)
 Minv = cv2.getPerspectiveTransform(dst, src)
-warped = cv2.warpPerspective(undist, M, img_size)
+warped = cv2.warpPerspective(undistorted_image, M, img_size)
 
 imageSideBySide(
-    original, 'Original',
+    original_image, 'Original',
     warped, 'Perspective transformed'
 )
 
