@@ -187,61 +187,229 @@ def draw_lane_lines_on_all_images(images, cols=2, rows=3, figsize=(15, 13)):
     return image_path_with_fitted_parameters
 
 
-imagesPoly = draw_lane_lines_on_all_images(test_images_with_names)
+# Lets do some action and draw the polygon & windows on images
+images_top_view_with_curve = draw_lane_lines_on_all_images(test_images_with_names)
+print('done')
 
 
-# calculating curvature
-# def calculateCurvature(yRange, left_fit_cr):
-#     """
-#     Returns the curvature of the polynomial `fit` on the y range `yRange`.
-#     """
-#
-#     return ((1 + (2 * left_fit_cr[0] * yRange * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
-#         2 * left_fit_cr[0])
-#
-#
-# for imagePoly in imagesPoly:
-#     imagePath, left_fit, right_fit, left_fit_m, right_fit_m = imagePoly
-#     yRange = 719
-#     leftCurvature = calculateCurvature(yRange, left_fit_m) / 1000
-#     rightCurvature = calculateCurvature(yRange, right_fit_m) / 1000
-#     print('Image : {}, Left : {:.2f} km, Right : {:.2f} km'.format(imagePath, leftCurvature, rightCurvature))
-#
-#
-# # Warp the detected lane boundries back onto oriignal image
-#
-# def drawLine(img, left_fit, right_fit):
-#     """
-#     Draw the lane lines on the image `img` using the poly `left_fit` and `right_fit`.
-#     """
-#     yMax = img.shape[0]
-#     ploty = np.linspace(0, yMax - 1, yMax)
-#     color_warp = np.zeros_like(img).astype(np.uint8)
-#
-#     # Calculate points.
-#     left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
-#     right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
-#
-#     # Recast the x and y points into usable format for cv2.fillPoly()
-#     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-#     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
-#     pts = np.hstack((pts_left, pts_right))
-#
-#     # Draw the lane onto the warped blank image
-#     cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
-#
-#     # Warp the blank back to original image space using inverse perspective matrix (Minv)
-#     newwarp = cv2.warpPerspective(color_warp, Minv, (img.shape[1], img.shape[0]))
-#     return cv2.addWeighted(img, 1, newwarp, 0.3, 0)
-#
-#
-# def drawLaneOnImage(img):
-#     """
-#     Find and draw the lane lines on the image `img`.
-#     """
-#     left_fit, right_fit, left_fit_m, right_fit_m, _, _, _, _, _ = search_lanes_and_fit_polynomial(img)
-#     output = drawLine(img, left_fit, right_fit)
-#     return cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-#
-#
-# resultLines = delegator(test_images_with_names, drawLaneOnImage)
+# here we calculating curvature
+def find_radius_of_curvature(yRange, left_fit_cr):
+    """
+    This Fn finds & returns the curvature of the polynomial
+    """
+
+    return ((1 + (2 * left_fit_cr[0] * yRange * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * left_fit_cr[0])
+
+
+for image_polygon in images_top_view_with_curve:
+    image_path, left_fit, right_fit, left_fit_m, right_fit_m = image_polygon
+    max_Y = 719
+    # converting from meters to kilometers
+    leftCurvature = find_radius_of_curvature(max_Y, left_fit_m) / 1000
+    rightCurvature = find_radius_of_curvature(max_Y, right_fit_m) / 1000
+    print('Image : {}, Left : {:.2f} km, Right : {:.2f} km'.format(image_path, leftCurvature, rightCurvature))
+
+
+# Warp the lane boundaries on top of image
+
+def fill_the_lane_area(img, left_fit, right_fit):
+    """
+    This Fn calculate the polynomial & fill the lanes area using fillPolly method.
+    """
+    yMax = img.shape[0]
+    ploty = np.linspace(0, yMax - 1, yMax)
+    color_warp = np.zeros_like(img).astype(np.uint8)
+
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+
+    # format the points for fillPoly method
+    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+    pts = np.hstack((pts_left, pts_right))
+
+    # Fill the lanes area onto the warped blank image
+    cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+    # Warp the blank image back to original image space using inverse perspective matrix we calculated earlier.
+    new_warped_image = cv2.warpPerspective(color_warp, Minv, (img.shape[1], img.shape[0]))
+    return cv2.addWeighted(img, 1, new_warped_image, 0.3, 0)
+
+
+def draw_lanes_visualization(img):
+    """
+   This Fn search the lane lines and best polynomial fit and then fills the lane area with the help
+   of 'fill_the_lane_area' Fn.
+    """
+    # calculating the polynomial parameters
+    left_fit, right_fit, left_fit_m, right_fit_m, left_lane_inds, right_lane_inds, out_img, nonzerox, nonzeroy = search_lanes_and_fit_polynomial(
+        img)
+    result = fill_the_lane_area(img, left_fit, right_fit)
+    return cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+
+
+images_with_lane_area = delegator(test_images_with_names, draw_lanes_visualization)
+
+print('done')
+
+
+# car position
+
+def find_car_position_and_show_output(img, fontScale=2):
+    """
+    This Fn find the car position and reflect the output on image
+    """
+    left_fit, right_fit, left_fit_m, right_fit_m, left_lane_inds, right_lane_inds, out_img, nonzerox, nonzeroy = search_lanes_and_fit_polynomial(
+        img)
+    output = fill_the_lane_area(img, left_fit, right_fit)
+
+    # Calculate curvature
+    left_curvature = find_radius_of_curvature(max_Y, left_fit_m)
+    right_curvature = find_radius_of_curvature(max_Y, right_fit_m)
+
+    # find car position
+    # maximum distance along x-axis in meters
+    x_max_mtrs = img.shape[1] * xm_per_pix
+    # maximum distance along y-axis in meters
+    y_max_mtrs = img.shape[0] * ym_per_pix
+
+    car_center_pt = x_max_mtrs / 2
+    # left line position in meters from left
+    left_line = left_fit_m[0] * y_max_mtrs ** 2 + left_fit_m[1] * y_max_mtrs + left_fit_m[2]
+    # right line position in meters from left
+    right_line = right_fit_m[0] * y_max_mtrs ** 2 + right_fit_m[1] * y_max_mtrs + right_fit_m[2]
+    # middle_point on center which is a refrence point to calculate the car distance
+    middle_line = left_line + (right_line - left_line) / 2
+
+    # car position from center
+    car_distance_from_center = middle_line - car_center_pt
+    if car_distance_from_center > 0:
+        message = '{:.2f} m right'.format(car_distance_from_center)
+    else:
+        message = '{:.2f} m left'.format(-car_distance_from_center)
+
+    # Writing the text on image
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_color = (255, 255, 255)
+    cv2.putText(output, 'Left curvature: {:.0f} m'.format(left_curvature), (50, 50), font, fontScale, font_color, 2)
+    cv2.putText(output, 'Right curvature: {:.0f} m'.format(right_curvature), (50, 120), font, fontScale, font_color, 2)
+    cv2.putText(output, 'Car is {} of center'.format(message), (50, 190), font, fontScale, font_color, 2)
+    return output
+
+
+image_output = delegator(test_images_with_names,
+                         lambda img: cv2.cvtColor(find_car_position_and_show_output(img), cv2.COLOR_BGR2RGB))
+
+print('done')
+
+# video pipeline
+
+from moviepy.editor import VideoFileClip
+
+
+class Lane():
+    def __init__(self):
+        self.left_fit = None
+        self.right_fit = None
+        self.left_fit_m = None
+        self.right_fit_m = None
+        self.left_curvature = None
+        self.right_curvature = None
+
+
+def calculate_car_distance_and_lane_parameters(img):
+    """
+    This Fn for video pipeline calculates the curvature and car distance from center
+    """
+    left_fit, right_fit, left_fit_m, right_fit_m, left_lane_inds, right_lane_inds, out_img, nonzerox, nonzeroy = search_lanes_and_fit_polynomial(
+        img)
+    # Calculate curvature
+    left_curvature = find_radius_of_curvature(max_Y, left_fit_m)
+    right_curvature = find_radius_of_curvature(max_Y, right_fit_m)
+
+    # find car position
+    # maximum distance along x-axis in meters
+    x_max_mtrs = img.shape[1] * xm_per_pix
+    # maximum distance along y-axis in meters
+    y_max_mtrs = img.shape[0] * ym_per_pix
+
+    car_center_pt = x_max_mtrs / 2
+    left_line = left_fit_m[0] * y_max_mtrs ** 2 + left_fit_m[1] * y_max_mtrs + left_fit_m[2]
+    right_line = right_fit_m[0] * y_max_mtrs ** 2 + right_fit_m[1] * y_max_mtrs + right_fit_m[2]
+    middle_line = left_line + (right_line - left_line) / 2
+
+    car_distance_from_center = middle_line - car_center_pt
+
+    return (left_fit, right_fit, left_fit_m, right_fit_m, left_curvature, right_curvature, car_distance_from_center)
+
+
+def show_output_on_video_frame(img, left_fit, right_fit, left_fit_m, right_fit_m, leftCurvature, rightCurvature,
+                               diffFromVehicle):
+    """
+   This Fn display the curvature and car distance for video frames
+    """
+    output = fill_the_lane_area(img, left_fit, right_fit)
+
+    if diffFromVehicle > 0:
+        message = '{:.2f} m right'.format(diffFromVehicle)
+    else:
+        message = '{:.2f} m left'.format(-diffFromVehicle)
+
+    # Draw info
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_color = (255, 255, 255)
+    cv2.putText(output, 'Left curvature: {:.0f} m'.format(leftCurvature), (50, 50), font, 1, font_color, 2)
+    cv2.putText(output, 'Right curvature: {:.0f} m'.format(rightCurvature), (50, 120), font, 1, font_color, 2)
+    cv2.putText(output, 'Vehicle is {} of center'.format(message), (50, 190), font, 1, font_color, 2)
+    return output
+
+
+def process_video(input_video, output_video):
+    """
+    This Fn takes in the input video, process it frame by frame and draw the lanes.
+    Then it calculate the curvature and car distance using helper Fns and finally show the data over on each
+    frame of video.
+    It return the processed video which contains lane and data drawn.
+    """
+    video_file = VideoFileClip(input_video).subclip(0, 7)
+
+    left_lane = Lane()
+    right_lane = Lane()
+
+    # nested Function to process the each image frame
+    def processImage(img):
+        left_fit, right_fit, left_fit_m, right_fit_m, left_curvature, right_curvature, diffFromVehicle = calculate_car_distance_and_lane_parameters(
+            img)
+
+        # applying sanity check based on left curvature
+        if left_curvature > 10000:
+            left_fit = left_lane.left_fit
+            left_fit_m = left_lane.left_fit_m
+            left_curvature = left_lane.left_curvature
+        else:
+            left_lane.left_fit = left_fit
+            left_lane.left_fit_m = left_fit_m
+            left_lane.left_curvature = left_curvature
+
+        # applying sanity check based on right curvature
+        if right_curvature > 10000:
+            right_fit = right_lane.right_fit
+            right_fit_m = right_lane.right_fit_m
+            right_curvature = right_lane.right_curvature
+        else:
+            right_lane.right_fit = right_fit
+            right_lane.right_fit_m = right_fit_m
+            right_lane.right_curvature = right_curvature
+
+        return show_output_on_video_frame(img, left_fit, right_fit, left_fit_m, right_fit_m, left_curvature,
+                                          right_curvature,
+                                          diffFromVehicle)
+
+    # saving the result video
+    clip = video_file.fl_image(processImage)
+    clip.write_videofile(output_video, audio=False)
+
+
+# Project video
+process_video('./challenge_video.mp4', './challenge_video_output.mp4')

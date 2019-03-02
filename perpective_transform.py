@@ -61,16 +61,16 @@ xSize, ySize, _ = undistorted_image.shape
 copy = undistorted_image.copy()
 
 maximum_Y = 720
-top_Y = 460
+top_Y = 452
 
 # here i draw the lines on both lanes for helping in visualization . The formation is trapezoidal
 # first select points for left lane
-left_bottom_x, left_bottom_y = (195, maximum_Y)
-left_top_x, left_top_y = (590, top_Y)
+left_bottom_x, left_bottom_y = (186, maximum_Y)
+left_top_x, left_top_y = (588, top_Y)
 
 # select points for right lanes
-right_top_x, right_top_y = (700, top_Y)
-right_bottom_x, right_bottom_y = (1125, maximum_Y)
+right_top_x, right_top_y = (702, top_Y)
+right_bottom_x, right_bottom_y = (1127, maximum_Y)
 
 color = [255, 0, 0]
 # width for drawing lines

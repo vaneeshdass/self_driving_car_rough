@@ -343,3 +343,5 @@ def drawLaneOnImage(img):
 
 
 resultLines = applyAndShow(testImages, drawLaneOnImage)
+
+print('done')
